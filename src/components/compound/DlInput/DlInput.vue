@@ -978,7 +978,7 @@ export default defineComponent({
             } else if (this.warning) {
                 return `var(--dl-color-warning)`
             } else {
-                return `var(--dl-color-secondary)`
+                return `var(--dl-color-hover)`
             }
         },
         cssVars(): Record<string, any> {
@@ -1112,6 +1112,9 @@ export default defineComponent({
                 'dl-input__wrapper',
                 `dl-input__wrapper--${this.size}`
             ]
+            if (this.focused) {
+                classes.push('dl-input__wrapper--focused')
+            }
             if (this.disabled) {
                 classes.push('dl-input__wrapper--disabled')
             }
@@ -1439,7 +1442,9 @@ export default defineComponent({
         &--readonly {
             border-color: var(--dl-color-separator) !important;
         }
-
+        &--focused {
+            border-color: var(--dl-color-secondary);
+        }
         &:hover {
             border-color: var(--dl-input-border-color-hover);
         }
