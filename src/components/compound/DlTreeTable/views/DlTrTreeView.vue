@@ -36,8 +36,7 @@
                     {{ childDisabledCheckboxTooltip }}
                 </dl-tooltip>
                 <DlCheckbox
-                    v-if="!row.hideCheckbox"
-                    :disabled="isCheckboxDisabled || !row.isSelectable"
+                    v-if="!isCheckboxDisabled && row.isSelectable"
                     :color="color"
                     :model-value="modelValue"
                     :indeterminate-value="true"
