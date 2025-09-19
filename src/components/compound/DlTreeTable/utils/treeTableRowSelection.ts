@@ -137,6 +137,39 @@ export function useTreeTableRowSelection(
         return index > -1
     }
 
+    function isDescendantOf(
+        rows: DlTableRow[],
+        parentId: string,
+        targets: string[]
+    ): boolean {
+        if (!Array.isArray(rows)) rows = [rows]
+
+        const targetSet = new Set(Array.isArray(targets) ? targets : [targets])
+        targetSet.delete(parentId)
+        if (targetSet.size === 0) return false
+
+        const stack = tree.slice()
+        let parent = null
+        while (stack.length) {
+            const node = stack.pop()
+            if (node && node.id === parentId) {
+                parent = node
+                break
+            }
+            if (node && node.children && node.children.length)
+                stack.push(...node.children)
+        }
+        if (!parent) return false
+
+        const sub = (parent.children && parent.children.slice()) || []
+        while (sub.length) {
+            const n = sub.pop()
+            if (targetSet.has(n.id)) return true
+            if (n && n.children && n.children.length) sub.push(...n.children)
+        }
+        return false
+    }
+
     function isRowSelected(
         rowKey: string | Function,
         rowKeyValue: string
@@ -162,6 +195,15 @@ export function useTreeTableRowSelection(
                     return false
                 }
             )
+            if (
+                isDescendantOf(
+                    computedRows.value,
+                    rowKeyValue,
+                    originalRows.map((item) => (item as DlTableRow).id)
+                )
+            ) {
+                return 'partial'
+            }
         }
         if (getSelectedRowByRowKey && getOriginalRowByRowKey) {
             if (
