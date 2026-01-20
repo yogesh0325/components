@@ -79,6 +79,7 @@ export default defineComponent({
         width: { type: [Number, String], default: 400 },
         height: { type: [Number, String], default: 'fit-content' },
         hideHeader: { type: Boolean, default: false },
+        hideFooter: { type: Boolean, default: false },
         fullscreen: Boolean,
         fullHeight: Boolean,
         separators: { type: Boolean, default: true },
@@ -177,10 +178,20 @@ export default defineComponent({
             return !!parentClassList?.contains('content')
         },
         hasHeader(): boolean {
-            return !!this.$slots.header && !this.hideHeader
+            const slotKeys = Object.keys(this.$slots)
+            return (
+                !this.hideHeader &&
+                slotKeys.includes('header') &&
+                !!this.$slots.header
+            )
         },
         hasFooter(): boolean {
-            return !!this.$slots.footer
+            const slotKeys = Object.keys(this.$slots)
+            return (
+                !this.hideFooter &&
+                slotKeys.includes('footer') &&
+                !!this.$slots.footer
+            )
         }
     },
     watch: {

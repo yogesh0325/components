@@ -3,7 +3,9 @@
         <div
             v-if="readonly"
             :class="[{ 'readonly-option': true }, { capitalized }]"
-            :style="`padding-left: ${10 + depth * indentation}px;`"
+            :style="`padding-left: ${
+                10 + depth * indentation
+            }px; width: ${computedWidth};`"
         >
             <dl-tooltip v-if="tooltip">
                 {{ tooltip }}
@@ -15,13 +17,16 @@
         <dl-list-item
             v-else
             class="option"
-            :class="{ highlighted: highlightSelected && isSelected }"
+            :class="{ 
+                highlighted: highlightSelected && isSelected,
+                'disabled-row': disableRow
+            }"
             :with-wave="withWave"
-            clickable
-            style="width: 100%"
+            :clickable="!disableRow"
+            :style="`width: ${computedWidth}`"
             @click="handleClick"
         >
-            <dl-item-section :color="color" style="width: 100%">
+            <dl-item-section :color="color">
                 <span
                     v-if="multiselect"
                     class="multiselect-option"
@@ -42,6 +47,7 @@
                         :model-value="modelValue"
                         :value="value"
                         :indeterminate-value="indeterminateValue"
+                        :disabled="disableRow"
                         @update:model-value="handleCheckboxUpdate"
                         @checked="handleSingleSelect"
                         @unchecked="handleSingleDeselect"
@@ -93,11 +99,13 @@
                     :with-wave="withWave"
                     :capitalized="capitalized"
                     :readonly="isReadonlyOption(child)"
+                    :disable-row="isDisableRowOption(child)"
                     :indentation="indentation"
                     :is-expanded="isExpanded"
                     :filter-term="filterTerm"
                     :fit-content="fitContent"
                     :tooltip="tooltip"
+                    :uniform-width="uniformWidth"
                     @update:model-value="handleCheckboxUpdate"
                     @selected="handleSingleSelect($event, true)"
                     @deselected="handleSingleDeselect"
@@ -135,7 +143,6 @@ import { debounce } from 'lodash'
 import { stateManager } from '../../../../StateManager'
 import { getCaseInsensitiveInput, getLabel } from '../utils'
 import {
-    DlSelectedValueType,
     DlSelectOption,
     DlSelectOptionType
 } from '../../types'
@@ -163,7 +170,7 @@ export default defineComponent({
         multiselect: { type: Boolean, default: false },
         value: { type: ValueTypes, default: null },
         children: {
-            type: Array as PropType<DlSelectedValueType[]>,
+            type: Array as PropType<DlSelectOptionType[]>,
             default: null
         },
         highlightSelected: { type: Boolean, default: false },
@@ -177,6 +184,7 @@ export default defineComponent({
         label: { type: String, default: null },
         capitalized: { type: Boolean, default: false },
         readonly: { type: Boolean, default: false },
+        disableRow: { type: Boolean, default: false },
         indentation: { type: Number, default: 30 },
         isExpanded: {
             type: Boolean,
@@ -194,7 +202,8 @@ export default defineComponent({
             type: Boolean,
             default: true
         },
-        tooltip: { type: String, default: null }
+        tooltip: { type: String, default: null },
+        uniformWidth: { type: String, default: null }
     },
     emits: [
         'update:model-value',
@@ -238,6 +247,12 @@ export default defineComponent({
         },
         displayLabel(): string {
             return String(this.label ? this.label : this.value)
+        },
+        computedWidth(): string {
+            if (this.uniformWidth) {
+                return this.uniformWidth
+            }
+            return 'max-content; min-width: 100%'
         }
     },
     methods: {
@@ -341,6 +356,11 @@ export default defineComponent({
             }
         },
         handleClick(e: Event) {
+            if (this.disableRow) {
+                e.stopPropagation()
+                e.preventDefault()
+                return
+            }
             e.stopPropagation()
             e.preventDefault()
             if (this.multiselect) {
@@ -384,6 +404,9 @@ export default defineComponent({
         },
         isReadonlyOption(option: any) {
             return !!option?.readonly
+        },
+        isDisableRowOption(option: DlSelectOptionType) {
+            return typeof option === 'object' && option !== null && !!option.disableRow
         }
     }
 })
@@ -445,5 +468,11 @@ export default defineComponent({
     font-size: 12px;
     line-height: 16px;
     color: var(--dl-color-lighter);
+}
+
+.disabled-row {
+    opacity: 0.6;
+    cursor: not-allowed;
+    pointer-events: none;
 }
 </style>

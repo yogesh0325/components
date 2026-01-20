@@ -30,6 +30,7 @@
             "
             class="close-button"
             icon="icon-dl-close"
+            size="xl"
             flat
             text-color="dl-color-darker"
             @click="$emit('onClose')"
@@ -41,7 +42,7 @@
 
 <script lang="ts">
 import { computed, defineComponent } from 'vue-demi'
-import { DlButton } from '../../../basic'
+import DlButton from '../../../basic/DlButton/DlButton.vue'
 import { DlEllipsis } from '../../../essential'
 import { DlTooltip } from '../../../shared'
 
