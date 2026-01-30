@@ -264,7 +264,7 @@ export default defineComponent({
                     color: this.color,
                     filled: this.filled,
                     shaded: this.shaded,
-                    textColor: this.iconColor ?? this.textColor
+                    textColor: this.iconColor || this.textColor
                 })
             }
 
@@ -278,7 +278,7 @@ export default defineComponent({
                 return setTextOnPressed({
                     disabled: this.disabled,
                     flat: this.flat,
-                    textColor: this.iconColor ?? this.textColor
+                    textColor: this.iconColor || this.textColor
                 })
             }
 
@@ -290,7 +290,7 @@ export default defineComponent({
                         outlined: this.outlined,
                         shaded: this.shaded,
                         flat: this.flat,
-                        color: this.iconColor ?? this.textColor
+                        color: this.iconColor || this.textColor
                     })
                 )
             }
@@ -421,6 +421,7 @@ export default defineComponent({
                             disabled: this.disabled,
                             flat: this.flat,
                             shaded: this.shaded,
+                            outlined: this.outlined,
                             color: this.color
                         }),
                     '--dl-button-bg-hover':
@@ -442,13 +443,21 @@ export default defineComponent({
                     '--dl-button-bg-pressed':
                         this.pressedBgColor ??
                         setBgOnPressed({
+                            disabled: this.disabled,
+                            flat: this.flat,
                             shaded: this.shaded,
-                            outlined: this.outlined
+                            outlined: this.outlined,
+                            filled: this.filled,
+                            color: this.color
                         }),
 
                     '--dl-button-border-pressed': setBorderOnPressed({
+                        disabled: this.disabled,
+                        flat: this.flat,
                         shaded: this.shaded,
-                        outlined: this.outlined
+                        outlined: this.outlined,
+                        filled: this.filled,
+                        color: this.color
                     })
                 }
             }
