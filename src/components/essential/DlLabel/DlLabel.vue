@@ -18,6 +18,7 @@
                 class="dl-label__text"
                 :class="!suffix && fluid ? 'dl-label__fluid' : ''"
                 :text="text"
+                :tooltip="tooltip"
             />
             <dl-ellipsis v-else class="dl-label__text">
                 <slot name="default" />
@@ -109,6 +110,11 @@ export default defineComponent({
         /**
          * Will fill the container size its given
          */
+        tooltip: {
+            type: Boolean,
+            default: true
+        },
+
         fluid: {
             type: Boolean,
             default: false

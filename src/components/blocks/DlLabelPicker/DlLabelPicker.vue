@@ -44,11 +44,12 @@
             @row-click="handleRowClick"
         >
             <template #body-cell-displayLabel="item">
-                <DlLabel
+                <dl-label
                     :text="item.row.displayLabel"
                     :indicator-color="item.row.color"
                     class="dl-label-picker-item"
                     :data-label-picker-identifier="item.row.identifier"
+                    :tooltip="false"
                 />
             </template>
         </dl-tree-table>
