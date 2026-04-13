@@ -112,7 +112,8 @@
                                         ref="input-clear-button"
                                         icon="icon-dl-close"
                                         :size="clearIconSize"
-                                        text-color="dl-color-darker"
+                                        text-color="dell-gray-600"
+                                        hover-text-color="var(--dell-gray-800)"
                                         flat
                                         fluid
                                         :padding="clearIconSizePadding"
@@ -159,7 +160,11 @@
                                     v-for="(item, suggestIndex) in suggestItems"
                                     :key="item.suggestion"
                                     clickable
-                                    style="font-size: 12px"
+                                    style="
+                                        font-size: var(
+                                            --dl-typography-body-body3-font-size
+                                        );
+                                    "
                                     :highlighted="
                                         suggestIndex === highlightedIndex
                                     "
@@ -1408,7 +1413,7 @@ export default defineComponent({
 
     &__title {
         color: var(--dl-color-medium);
-        font-size: var(--dl-font-size-body);
+        font-size: var(--dl-typography-body-body3-font-size);
         text-align: left;
         margin-right: 5px;
         white-space: nowrap;
@@ -1416,7 +1421,7 @@ export default defineComponent({
 
     &__asterisk {
         color: var(--dl-color-medium);
-        font-size: var(--dl-font-size-body);
+        font-size: var(--dl-typography-body-body3-font-size);
         user-select: none;
 
         &--red {
@@ -1462,6 +1467,10 @@ export default defineComponent({
             ::v-deep .dl-icon {
                 color: var(--dell-blue-500);
             }
+
+            .dl-input__adornment-container--clear ::v-deep .dl-icon {
+                color: var(--dl-icon-color);
+            }
         }
 
         &--error {
@@ -1488,11 +1497,11 @@ export default defineComponent({
 
     &__input {
         display: inline-block;
-        font-family: Arial, Helvetica, sans-serif;
+        font-family: var(--dl-typography-font-family-body);
         border-right: none;
         border-radius: 0px;
         white-space: var(--dl-input-white-space);
-        font-size: var(--dl-font-size-body);
+        font-size: var(--dl-typography-body-body3-font-size);
         overflow: hidden scroll;
         text-overflow: ellipsis;
         box-sizing: content-box;
@@ -1613,7 +1622,7 @@ export default defineComponent({
 
     &__counter {
         margin-left: 10px;
-        font-size: var(--dl-font-size-body);
+        font-size: var(--dl-typography-body-body3-font-size);
         color: var(--dl-color-darker);
     }
 
