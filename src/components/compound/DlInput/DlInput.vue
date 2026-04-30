@@ -74,7 +74,26 @@
                             >
                                 <slot name="prepend" />
                             </div>
+                            <input
+                                v-if="isPasswordType"
+                                ref="input"
+                                :value="modelValue"
+                                :type="showPass ? 'text' : 'password'"
+                                :class="inputClasses"
+                                :placeholder="placeholder"
+                                :style="stylesInput"
+                                :disabled="disabled"
+                                :readonly="readonly"
+                                :maxlength="maxLength"
+                                @input="onNativeInput"
+                                @focus="onNativeFocus"
+                                @blur="onNativeBlur"
+                                @keydown="onKeydown"
+                                @keyup.enter="onNativeEnterPress"
+                                @mouseover="onHover"
+                            />
                             <div
+                                v-else
                                 ref="input"
                                 :contenteditable="contenteditable"
                                 :class="inputClasses"
@@ -141,14 +160,16 @@
                         </div>
                         <dl-menu
                             v-if="showSuggestItems"
-                            v-model="isMenuOpen"
-                            auto-close
+                            :model-value="isMenuOpen"
+                            :menu-class="suggestionMenuClass()"
+                            persistent
                             no-focus
+                            no-refocus
                             :offset="[0, 3]"
                             fit-container
                             :fit-content="fitContent"
                             :arrow-nav-items="stringSuggestions"
-                            @click="onMenuShow"
+                            @update:model-value="onSuggestionMenuModelUpdate"
                             @highlighted-item="setHighlightedIndex"
                             @selected-item="handleSelectedItem"
                         >
@@ -156,10 +177,19 @@
                                 bordered
                                 :style="{ maxWidth: suggestMenuWidth }"
                             >
+                                <slot name="suggestion-header">
+                                    <dl-list-item
+                                        v-if="suggestionHeader"
+                                        class="dl-input__suggestion--header"
+                                    >
+                                        {{ suggestionHeader }}
+                                    </dl-list-item>
+                                </slot>
                                 <dl-list-item
                                     v-for="(item, suggestIndex) in suggestItems"
                                     :key="item.suggestion"
                                     clickable
+                                    :start-icon="getSuggestionStartIcon(item)"
                                     style="
                                         font-size: var(
                                             --dl-typography-body-body3-font-size
@@ -168,37 +198,47 @@
                                     :highlighted="
                                         suggestIndex === highlightedIndex
                                     "
+                                    @mousedown.prevent
                                     @click="onClick($event, item)"
                                 >
-                                    <img
-                                        v-if="item.image"
-                                        :src="item.image"
-                                        class="dl-input__suggestion--image"
-                                    />
-                                    <span
-                                        v-for="(word, index) in getSuggestWords(
-                                            item.suggestion,
-                                            modelValue
-                                        )"
-                                        :key="JSON.stringify(word) + index"
-                                        :class="{
-                                            'dl-input__suggestion--highlighted':
-                                                word.highlighted
-                                        }"
+                                    <slot
+                                        name="suggestion-item"
+                                        :item="item"
+                                        :keyword="modelValue"
+                                        :suggest-index="suggestIndex"
                                     >
-                                        <span v-if="word.value[0] === ' '"
-                                        >&nbsp;</span
-                                        >
-                                        {{ word.value }}
+                                        <img
+                                            v-if="item.image"
+                                            :src="item.image"
+                                            class="dl-input__suggestion--image"
+                                        />
                                         <span
-                                            v-if="
-                                                word.value[
-                                                    word.value.length - 1
-                                                ] === ' '
-                                            "
-                                        >&nbsp;</span
+                                            v-for="(
+                                                word, index
+                                            ) in getSuggestWords(
+                                                item.suggestion,
+                                                modelValue
+                                            )"
+                                            :key="JSON.stringify(word) + index"
+                                            :class="{
+                                                'dl-input__suggestion--highlighted':
+                                                    word.highlighted
+                                            }"
                                         >
-                                    </span>
+                                            <span v-if="word.value[0] === ' '"
+                                            >&nbsp;</span
+                                            >
+                                            {{ word.value }}
+                                            <span
+                                                v-if="
+                                                    word.value[
+                                                        word.value.length - 1
+                                                    ] === ' '
+                                                "
+                                            >&nbsp;</span
+                                            >
+                                        </span>
+                                    </slot>
                                 </dl-list-item>
                             </dl-list>
                         </dl-menu>
@@ -591,6 +631,20 @@ export default defineComponent({
             default: 'auto'
         },
         /**
+         * Text shown at the top of the suggestions list
+         */
+        suggestionHeader: {
+            type: String,
+            default: ''
+        },
+        /**
+         * Open suggestion menu when input is focused
+         */
+        openSuggestionsOnFocus: {
+            type: Boolean,
+            default: false
+        },
+        /**
          * Tooltip showed when hovering over the clear button
          */
         clearButtonTooltip: {
@@ -678,18 +732,26 @@ export default defineComponent({
         const isInternalChange = ref(false)
 
         const suggestItems = computed<DlInputSuggestion[]>(() => {
-            if (!modelValue.value) return []
+            const inputValue =
+                modelValue.value === null || modelValue.value === undefined
+                    ? ''
+                    : modelValue.value.toString()
             return getSuggestItems(
                 autoSuggestItems.value,
-                modelValue.value?.toString()
+                inputValue
             ) as DlInputSuggestion[]
         })
+        const getSuggestionStartIcon = (item: DlInputSuggestion) =>
+            (item as any).startIcon
         const input = ref(null)
 
         const setHighlightedIndex = (value: any) => {
             highlightedIndex.value = value
         }
-        const handleSelectedItem = (value: any) => {
+        const handleSelectedItem = (value: string | null | undefined) => {
+            if (typeof value !== 'string') {
+                return
+            }
             onAutoSuggestClick(null, value)
         }
 
@@ -781,7 +843,11 @@ export default defineComponent({
         }
 
         const onAutoSuggestClick = (e: Event, item: string): void => {
-            const newValue = clearSuggestion(modelValue.value.toString(), item)
+            if (typeof item !== 'string' || !item.trim().length) {
+                return
+            }
+            const currentValue = String(modelValue.value ?? '')
+            const newValue = clearSuggestion(currentValue, item)
             if (!maxLength.value || newValue.length < maxLength.value) {
                 const toEmit = newValue.replace(new RegExp('&nbsp;', 'g'), ' ')
                 emit('input', toEmit, e)
@@ -790,6 +856,7 @@ export default defineComponent({
                 setCaretAtTheEnd(input.value)
                 isInternalChange.value = true
             }
+            isMenuOpen.value = false
         }
 
         const emitAddFile = (file: DlInputFile) => {
@@ -857,6 +924,11 @@ export default defineComponent({
         })
 
         const onModelValueChange = (val: string | number) => {
+            if (type.value === 'password') {
+                isInternalChange.value = false
+                return
+            }
+
             if (val !== null && val !== undefined) {
                 if (val === input.value.innerHTML) {
                     return
@@ -885,6 +957,10 @@ export default defineComponent({
             (val: string | number) => {
                 if (isInternalChange.value) {
                     isInternalChange.value = false
+                    return
+                }
+
+                if (type.value === 'password') {
                     return
                 }
 
@@ -924,7 +1000,7 @@ export default defineComponent({
 
         const prevInputValue = ref('')
         watch([disabled, readonly], (value) => {
-            if (!input.value) {
+            if (!input.value || type.value === 'password') {
                 return
             }
 
@@ -949,6 +1025,7 @@ export default defineComponent({
             emitAddFile,
             emitRemoveFile,
             updateSyntax,
+            getSuggestionStartIcon,
             stringSuggestions,
             showPlaceholder,
             spanText,
@@ -1023,9 +1100,6 @@ export default defineComponent({
             if (this.hasPrepend && this.hasAppend) {
                 classes.push('dl-input__input--both-adornments')
             }
-            if (this.type === 'password' && !this.showPass) {
-                classes.push('dl-input__input--password')
-            }
 
             if (this.disabled) {
                 classes.push('dl-input__input--disabled')
@@ -1063,6 +1137,9 @@ export default defineComponent({
                 this.size === (InputSizes.small as TInputSizes)
             )
         },
+        isPasswordType(): boolean {
+            return this.type === 'password'
+        },
         hasPrepend(): boolean {
             return !!this.$slots.prepend
         },
@@ -1096,7 +1173,11 @@ export default defineComponent({
             return !this.$slots.append && this.type === 'password'
         },
         showSuggestItems(): boolean {
-            return !!this.suggestItems?.length && !!this.modelValue
+            const hasValue = String(this.modelValue ?? '').length > 0
+            return (
+                !!this.suggestItems?.length &&
+                (hasValue || (this.openSuggestionsOnFocus && this.focused))
+            )
         },
         debouncedBlur(): any {
             if (stateManager.disableDebounce) {
@@ -1164,6 +1245,10 @@ export default defineComponent({
             }
 
             this.$emit('keydown', e)
+
+            if (this.isPasswordType) {
+                return
+            }
 
             if (e.key !== 'Backspace') {
                 /**
@@ -1247,6 +1332,16 @@ export default defineComponent({
             const inputRef = this.$refs.input as HTMLInputElement
             inputRef.focus()
         },
+        openSuggestionMenuOnFocus(): void {
+            if (!this.openSuggestionsOnFocus || !this.suggestItems?.length) {
+                return
+            }
+            this.$nextTick(() => {
+                if (this.focused) {
+                    this.isMenuOpen = true
+                }
+            })
+        },
         onFocus(e: InputEvent): void {
             this.handleValueTrim()
             const el = e.target as HTMLElement
@@ -1254,21 +1349,61 @@ export default defineComponent({
                 el.scroll(el.scrollWidth, 0)
             }
             this.focused = true
+            this.openSuggestionMenuOnFocus()
             this.$emit('focus', e)
         },
         blur(): void {
             const inputRef = this.$refs.input as HTMLInputElement
             inputRef.blur()
         },
-        onBlur(e: InputEvent): void {
+        suggestionMenuClass(): string {
+            return `${this.uuid}__suggestion-menu`
+        },
+        isBlurToSuggestionMenu(e: FocusEvent): boolean {
+            const relatedTarget = e.relatedTarget as HTMLElement | null
+            return !!relatedTarget?.closest(`.${this.suggestionMenuClass()}`)
+        },
+        closeSuggestionMenuAfterBlur(): void {
+            if (!this.focused) {
+                this.isMenuOpen = false
+            }
+        },
+        onBlur(e: FocusEvent): void {
+            if (this.isBlurToSuggestionMenu(e)) {
+                return
+            }
             const el = e.target as HTMLElement
             el.innerText = (el.innerText ?? '').endsWith('.')
                 ? el.innerText.slice(0, -1)
                 : el.innerText
             el.scroll(0, 0)
             this.focused = false
+            this.closeSuggestionMenuAfterBlur()
             this.$emit('blur', e)
             this.handleValueTrim()
+        },
+        onNativeInput(e: Event): void {
+            const target = e.target as HTMLInputElement
+            const value = target.value
+            this.$emit('input', value, e)
+            this.$emit('update:model-value', value)
+        },
+        onNativeFocus(e: FocusEvent): void {
+            this.focused = true
+            this.openSuggestionMenuOnFocus()
+            this.$emit('focus', e)
+        },
+        onNativeBlur(e: FocusEvent): void {
+            if (this.isBlurToSuggestionMenu(e)) {
+                return
+            }
+            this.focused = false
+            this.closeSuggestionMenuAfterBlur()
+            this.$emit('blur', e)
+        },
+        onNativeEnterPress(e: KeyboardEvent): void {
+            const target = e.target as HTMLInputElement
+            this.$emit('enter', target.value, e)
         },
         onEnterPress(e: any): void {
             this.$emit('enter', e.target.innerText, e)
@@ -1280,14 +1415,22 @@ export default defineComponent({
             this.$emit('update:model-value', clearValue)
 
             const inputRef = this.$refs.input as HTMLInputElement
-            inputRef.innerHTML = ''
+            if (this.isPasswordType) {
+                inputRef.value = ''
+            } else {
+                inputRef.innerHTML = ''
+            }
             inputRef.focus()
         },
         onPassShowClick(): void {
             this.showPass = !this.showPass
         },
-        onMenuShow(): void {
-            this.focus()
+        onSuggestionMenuModelUpdate(value: boolean): void {
+            if (!value && this.focused && this.openSuggestionsOnFocus) {
+                this.openSuggestionMenuOnFocus()
+                return
+            }
+            this.isMenuOpen = value
         },
         getSuggestWords(
             item: string,
@@ -1413,7 +1556,10 @@ export default defineComponent({
 
     &__title {
         color: var(--dl-color-medium);
+        font-family: var(--dl-typography-body-body3-font-family);
         font-size: var(--dl-typography-body-body3-font-size);
+        line-height: var(--dl-typography-body-body3-line-height);
+        font-weight: var(--dl-typography-body-body3-font-weight);
         text-align: left;
         margin-right: 5px;
         white-space: nowrap;
@@ -1421,7 +1567,10 @@ export default defineComponent({
 
     &__asterisk {
         color: var(--dl-color-medium);
+        font-family: var(--dl-typography-body-body3-font-family);
         font-size: var(--dl-typography-body-body3-font-size);
+        line-height: var(--dl-typography-body-body3-line-height);
+        font-weight: var(--dl-typography-body-body3-font-weight);
         user-select: none;
 
         &--red {
@@ -1491,18 +1640,19 @@ export default defineComponent({
             height: 18px;
         }
         &--m {
-            height: 26px;
+            height: 32px;
         }
     }
 
     &__input {
         display: inline-block;
-        font-family: var(--dl-typography-font-family-body);
-        border-right: none;
+        font-family: var(--dl-typography-body-body2-font-family);
+        border: none;
         border-radius: 0px;
         white-space: var(--dl-input-white-space);
-        font-size: var(--dl-typography-body-body3-font-size);
-        overflow: hidden scroll;
+        font-size: var(--dl-typography-body-body2-font-size);
+        font-weight: var(--dl-typography-body-body2-font-weight);
+        overflow: hidden;
         text-overflow: ellipsis;
         box-sizing: content-box;
         word-wrap: break-word;
@@ -1524,6 +1674,7 @@ export default defineComponent({
 
         &--prepend {
             width: calc(100% - 10px - 28px);
+            padding-right: 8px;
         }
 
         &--append {
@@ -1549,12 +1700,12 @@ export default defineComponent({
         &--m {
             height: 12px;
             line-height: 12px;
-            padding-top: 7px;
-            padding-bottom: 7px;
+            padding-top: 10px;
+            padding-bottom: 10px;
         }
         &--medium {
-            padding-top: 7px;
-            padding-bottom: 7px;
+            padding-top: 10px;
+            padding-bottom: 10px;
         }
 
         &--s {
@@ -1580,7 +1731,7 @@ export default defineComponent({
         }
 
         &:focus {
-            text-overflow: clip;
+            text-overflow: ellipsis;
         }
 
         &:read-only {
@@ -1622,11 +1773,21 @@ export default defineComponent({
 
     &__counter {
         margin-left: 10px;
+        font-family: var(--dl-typography-body-body3-font-family);
         font-size: var(--dl-typography-body-body3-font-size);
+        line-height: var(--dl-typography-body-body3-line-height);
+        font-weight: var(--dl-typography-body-body3-font-weight);
         color: var(--dl-color-darker);
     }
 
     &__suggestion {
+        &--header {
+            font-family: var(--dl-typography-body-body3-font-family);
+            font-size: var(--dl-typography-body-body3-font-size);
+            line-height: var(--dl-typography-body-body3-line-height);
+            font-weight: var(--dl-typography-body-body3-font-weight);
+            color: var(--dell-gray-600);
+        }
         &--highlighted {
             background-color: var(--dl-color-warning);
             border-radius: 2px;

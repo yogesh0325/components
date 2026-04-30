@@ -287,6 +287,8 @@ export default defineComponent({
                 return
             }
 
+            const naturalWidth = el.scrollWidth
+
             setPosition({
                 el,
                 offset: props.offset as number[],
@@ -296,6 +298,10 @@ export default defineComponent({
                 maxWidth: props.maxWidth,
                 maxHeight: props.maxHeight
             })
+
+            if (naturalWidth <= 60) {
+                el.style.width = 'max-content'
+            }
         }
 
         function delayShow(evt: AnchorEvent) {
@@ -431,16 +437,16 @@ export default defineComponent({
     overflow-x: hidden;
     min-height: 16px;
     padding: var(--dl-tooltip-padding, 2px 5px);
-    font-size: var(--dl-font-size-small);
-    line-height: 16px;
+    font-family: var(--dl-typography-body-body3-font-family);
+    font-size: var(--dl-typography-body-body3-font-size);
+    line-height: var(--dl-typography-body-body3-line-height);
+    font-weight: var(--dl-typography-body-body3-font-weight);
     color: var(--dl-tooltip-color);
     background: var(--dl-tooltip-background);
     border: 1px solid var(--dl-tooltip-border, #eaeaea);
     border-radius: 0px;
     box-shadow: 0 2px 2px 0 var(--dell-shadow, rgba(0, 0, 0, 0.14));
     text-transform: none;
-    font-family: 'Roboto', sans-serif;
-    font-weight: 400;
     text-align: var(--dl-tooltip-text-align);
     white-space: break-spaces;
     word-break: break-word;

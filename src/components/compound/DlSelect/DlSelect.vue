@@ -183,11 +183,7 @@
                     v-else-if="showMenuList"
                     class="select-list"
                     :padding="false"
-                    :style="
-                        optionsCount > MAX_ITEMS_PER_LIST
-                            ? ''
-                            : `width: 100%; max-height: calc(${calculatedDropdownMaxHeight} - 20px); overflow-y: auto;`
-                    "
+                    :style="dropdownListStyle"
                 >
                     <dl-select-option
                         v-if="showAllItems"
@@ -218,7 +214,7 @@
                         :virtual-scroll-item-size="28"
                         :virtual-scroll-sticky-size-start="28"
                         :virtual-scroll-sticky-size-end="20"
-                        :style="`width: 100%; max-height: calc(${calculatedDropdownMaxHeight} - 20px);`"
+                        :style="virtualScrollStyle"
                     >
                         <dl-select-option
                             :key="getKeyForOption(item)"
@@ -685,6 +681,25 @@ export default defineComponent({
 
             // :shrug: if it's not a known value, just return it
             return `calc(${this.dropdownMaxHeight} - 20px)`
+        },
+        dropdownListStyle(): Record<string, string> {
+            if (this.optionsCount > this.MAX_ITEMS_PER_LIST) {
+                return {}
+            }
+            return {
+                ...this.baseDropdownStyle,
+                overflowY: 'auto'
+            }
+        },
+        virtualScrollStyle(): Record<string, string> {
+            return this.baseDropdownStyle
+        },
+        baseDropdownStyle(): Record<string, string> {
+            return {
+                width: '100%',
+                maxHeight: `calc(${this.calculatedDropdownMaxHeight} - 20px)`,
+                overflowX: 'hidden'
+            }
         },
         computedMenuStyle(): string {
             let style = this.menuStyle ?? ''
@@ -1356,7 +1371,10 @@ export default defineComponent({
         padding: 10px;
         outline: none;
         background: none;
-        font-size: 12px;
+        font-family: var(--dl-typography-body-body2-font-family);
+        font-size: var(--dl-typography-body-body2-font-size);
+        line-height: var(--dl-typography-body-body2-line-height);
+        font-weight: var(--dl-typography-body-body2-font-weight);
         position: relative;
         display: flex;
         align-items: center;
@@ -1384,12 +1402,12 @@ export default defineComponent({
         }
 
         &--m {
-            padding-top: 7px;
-            padding-bottom: 7px;
+            padding-top: 9px;
+            padding-bottom: 9px;
         }
         &--medium {
-            padding-top: 7px;
-            padding-bottom: 7px;
+            padding-top: 9px;
+            padding-bottom: 9px;
         }
 
         &--s {
@@ -1517,11 +1535,11 @@ export default defineComponent({
         }
 
         &--m {
-            height: 28px;
+            height: 32px;
         }
 
         &--medium {
-            height: 28px;
+            height: 32px;
         }
 
         &--s {
@@ -1551,10 +1569,6 @@ export default defineComponent({
         border: 0;
         outline: none;
         background: none;
-        color: var(--dl-color-darker);
-        font-family: 'Roboto', sans-serif;
-        font-size: 12px;
-        height: 14px;
 
         &.hidden {
             position: absolute;
